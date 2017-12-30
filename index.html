@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Chat</title>
+    <meta charset="utf-8"/>
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <link rel="stylesheet" type="text/css" href="/assets/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="shortcut icon" href="/assets/images/chat.png">
+</head>
+<body>
+<div id="background"></div>
+<i class="fa fa-spinner fa-pulse fa-5x fa-fw" style="position:absolute;left: 47%;top: 45%;" id="spinner"></i>
+<div class="container">
+    <div id="main">
+        <div id="tab-kutusu">
+            <div class="tab kanal title" id="genel">
+                <a title="Genel sohbet kanalı">
+                    Genel <span class="online small" id="oda-genel-online">~</span>
+                </a>
+            </div>
+            <div class="tab kanal title" id="oyuncu-arama">
+                <a title="Oyuncu arama kanalı">
+                    Oyuncu Arama <span class="online small" id="oda-oyuncu-arama-online">~</span>
+                </a>
+            </div>
+            <div class="tab kanal title muzik" style="float:right;padding-left:0px;background:url('');display:none">
+                <a title="Şu anda çalan müzik">~</a>
+            </div>
+        </div>
+
+        <div id="tab-icerik-tasiyici">
+            <div id="tab-icerik-scroll" style="height: 600px !important">
+                <div id="tab-icerik-kutusu">
+                    <div class="tab-icerik" style="display:none" id="oda-genel" data-bg="https://images5.alphacoders.com/665/thumb-1920-665419.png"></div>
+                    <div class="tab-icerik" style="display:none" id="oda-oyuncu-arama" data-bg="https://images5.alphacoders.com/665/thumb-1920-665419.png"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-kutusu">
+            <input type='text' id='chat-input' placeholder="mesaj..." maxlength="100"/>
+        </div>
+
+    </div>
+
+    <div class="pull-right small" id="online">
+        NICK: <span id="info-nick">~</span> ONLINE: <span id="info-online">~</span> MESAJ: <span id="info-message">~</span>
+    </div>
+    <iframe id="youtube" width="0" height="0" src="" frameborder="0" allowfullscreen></iframe>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery-slimScroll/1.3.8/jquery.slimscroll.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#chat-input').attr('disabled', 'disabled');
+
+    setTimeout(function(){
+        var token = sessionStorage.token;
+        var socket = io.connect('http://127.0.0.1:4000');
+        var textarea = $('#chat-input');
+        var clearBtn = $('#clear');
+        var defaultRoom = 'genel';
+        var username = 'Misafir_'+Math.floor(Math.random() * ((999-100)+1) + 100);
+        var infoMessage = $('#info-message');
+        var infoOnline = $('#info-online');
+        var infoNick = $('#info-nick');
+        var r = 'genel';
+        var messages = $('#oda-'+r);
+        var odaGenel = $('#oda-genel-online');
+        var odaOyuncuArama = $('#oda-oyuncu-arama-online');
+        var avatar = Math.floor(Math.random()*(99-1+1)+1);
+        var apiKey = 'AIzaSyA-gwVzySldd-ahsh8eHS1vNogouL0gTZQ';
+
+        function resizeBackground(){
+            var width=$(window).width();
+            var height=$(window).height();
+            $(window).bind('resize',function() {
+                $(this).css({"background-size": width+"px "+height+"px"});
+            });
+        }
+
+        function joinRoom(room = defaultRoom){
+            r = room;
+            socket.emit("joinroom", { room: r });
+            $('.kanal').removeClass('mavi');
+            $('#'+r).addClass('mavi');
+            $('.tab-icerik').hide();
+            $('#oda-'+r).show();
+            $('#oda-'+r).html('');
+            var background = $('#oda-'+r).attr('data-bg');
+            $("#background").fadeOut(0, function(){
+                $(this).css({"background-image": "url('"+background+"')"});
+                $(this).fadeIn(500);
+            });
+            fallback("<strong>"+r+"</strong> odasına geçiş yapıldı!");
+        }
+
+        function fallback(message, time = null, nick = 'Bilgi'){
+            if(!time) time = (new Date(Date.now()).getHours() < 10 ? '0' + new Date(Date.now()).getHours() : new Date(Date.now()).getHours())+':'+(new Date(Date.now()).getMinutes() < 10 ? '0' + new Date(Date.now()).getMinutes() : new Date(Date.now()).getMinutes());
+            $('#oda-'+r).append('<div class="line"><div class="mesaj"><img class="img-circle avatar" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAABiVBMVEUAAAABAQECAgISEhIuLi5AQEBOTk5XV1dkZGRzc3MBAQECAgIAAAAAAAB8fHxRUVEAAAAAAAAAAAAAAAAAAAAAAABiYmJxcXECAgICAgJ+fn5AQEABAQECAgIEBAR+fn4uLi4BAQECAgJ+fn5/f39lZWUcHBwCAgICAgJ/f38EBAQEBAQDAwMDAwMBAQEBAQEDAwNFRUsBAQFGRkoBAQHAwMCioqIBAQGvr7xWVlZSUlLv7+/Ozs7Kysrp6emqqrWqqrbT0977+/vU1NUAzP8FBggNiq4XWHEhJjQvcpY/ha9CS2hOlsZQWHNaZo1mZmZnZ2doaGhokr9tfauIiIiJiY2QkJCVlZWXnrmgoK6hoa6iqsqlpaWnp6eoqLOpqbOysri0tLnExMXFxcbHx8nJycnNzc3Nzc7Ozs7Pz9bQ0NbV1dnW1tfX19zX197Z2drZ2d3Z2uva2tra2ujc3ODe3t7i4uTj4+Xj4/Hk5PHm5unp6evu7vDw8PHy8vL29vb39/f7+/v8/PunnDcGAAAARHRSTlMAAAAAAAAAAAAAAQEICQ0OEBIeICEjKCgqLDc7PkhJVFxeYGNpbG90dXmMjpOUl5mlpqioqqquvtrb3N/h4+Pm5vb4+fw5wJIAAADiSURBVBgZBcFRToNAEAbgf2Z2WRBoBI2m4QJtfPUAffHWXsEj+NDEaEPTVsSyWXdh/D5yILKVNUjxN6rCAFjVTeYQ/i7jABhg1d6/LAqiV6sDRIq7x6c8hJionGKIrFWzi0uYrn6Ju6ZSozbz/LlEtaPxmVWjmRvcjQCY58Flajq76b8BAMDt5tBxu5VRmESIZZRtK8V8KQiz5WTEfJzOvD/6UggiICn9cc+YwrrOc2vzvF6HCcRF+1A9W4LGt7E/e6OTpu5dAfDP1+DBqlmMvatX+SElp2qAxKcwzuB4XRLwDyp8bANdeWECAAAAAElFTkSuQmCC"/> <span class="nick">'+nick+'</span>: '+message+'</div><div class="saat small">'+time+'</div></div>'); 
+        }
+
+        function strip_tags(str) {
+            str = str.toString();
+            return str.replace(/<\/?[^>]+>/gi, '');
+        }
+
+        function scrollStart(){
+            $log=$("#tab-icerik-scroll");
+				$log.slimScroll({
+                    scrollTo:$log[0].scrollHeight,
+                    height: '600px',
+                    start: 'bottom'
+				});
+        }
+
+        function youtube_parser(url){
+            var regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#\&\?]*).*/;
+            var match = url.match(regExp);
+            return (match&&match[7].length==11)? match[7] : false;
+        }
+
+        $('.kanal').click(function(data){
+            joinRoom($(this).attr('id'));
+        });
+
+        socket.on('connect', function (sockett) {
+            joinRoom();
+            fallback("Güvenli bağlantı için bekleniyor...");
+                setTimeout(function(){
+                    $('#spinner').fadeOut(500);
+                    $('#chat-input').removeAttr('disabled');
+                    fallback("Sohbet sunucusuna bağlanıldı!");
+                }, 1000);
+            socket.on('authenticated', function(){
+                /*$('#spinner').fadeOut(500);
+                $('#chat-input').removeAttr('disabled');
+                joinRoom();
+                $('#oda-'+r).html('');
+                fallback("Sohbet sunucusuna bağlanıldı!");*/
+            }).emit('authenticate', {token: token});
+        });
+
+        socket.on('disconnect', function() {
+            $('#oda-'+r).html('');
+            fallback("Sohbet sunucusuna bağlanılamadı, tekrar deneniyor..");
+        });
+
+        socket.on('fallback', function(data) {
+            if(data.status == false){
+                fallback(data.message);
+            }
+        });
+
+        socket.on('youtube', function(data) {
+            $('#youtube').attr('src', 'http://www.youtube.com/embed/'+youtube_parser(data.url)+'?rel=0&autoplay=1');
+            $.getJSON('https://www.googleapis.com/youtube/v3/videos?id='+youtube_parser(data.url)+'&key='+apiKey+'&fields=items(snippet(title))&part=snippet', function(data,status,xhr){
+                $('.muzik').show(1000).fadeIn(1000).html('<a title="Şu anda çalan müzik">'+data.items[0].snippet.title+'</a>');
+                fallback('Müzik açıldı! <strong>'+data.items[0].snippet.title+'</strong> artık herkes tarafından dinleniyor!');
+            });
+        });
+
+        socket.on('messages', function(data){
+            if(data.length){
+                for(var x = 0;x < data.length;x++){
+                    $('#oda-'+data[x].room).append('<div class="line"><div class="mesaj"><img class="img-circle avatar" src="https://randomuser.me/api/portraits/thumb/men/'+data[x].avatar+'.jpg"/> <span class="nick">'+data[x].name+'</span>: '+strip_tags(data[x].message)+'</div><div class="saat small">'+data[x].time+'</div></div>');
+                }
+                scrollStart();
+            }
+        });
+
+        socket.on('pm', function(data){
+            if(data.me == username){
+                $('#oda-'+r).append('<div class="line"><div class="mesaj"><img class="img-circle avatar" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAABiVBMVEUAAAABAQECAgISEhIuLi5AQEBOTk5XV1dkZGRzc3MBAQECAgIAAAAAAAB8fHxRUVEAAAAAAAAAAAAAAAAAAAAAAABiYmJxcXECAgICAgJ+fn5AQEABAQECAgIEBAR+fn4uLi4BAQECAgJ+fn5/f39lZWUcHBwCAgICAgJ/f38EBAQEBAQDAwMDAwMBAQEBAQEDAwNFRUsBAQFGRkoBAQHAwMCioqIBAQGvr7xWVlZSUlLv7+/Ozs7Kysrp6emqqrWqqrbT0977+/vU1NUAzP8FBggNiq4XWHEhJjQvcpY/ha9CS2hOlsZQWHNaZo1mZmZnZ2doaGhokr9tfauIiIiJiY2QkJCVlZWXnrmgoK6hoa6iqsqlpaWnp6eoqLOpqbOysri0tLnExMXFxcbHx8nJycnNzc3Nzc7Ozs7Pz9bQ0NbV1dnW1tfX19zX197Z2drZ2d3Z2uva2tra2ujc3ODe3t7i4uTj4+Xj4/Hk5PHm5unp6evu7vDw8PHy8vL29vb39/f7+/v8/PunnDcGAAAARHRSTlMAAAAAAAAAAAAAAQEICQ0OEBIeICEjKCgqLDc7PkhJVFxeYGNpbG90dXmMjpOUl5mlpqioqqquvtrb3N/h4+Pm5vb4+fw5wJIAAADiSURBVBgZBcFRToNAEAbgf2Z2WRBoBI2m4QJtfPUAffHWXsEj+NDEaEPTVsSyWXdh/D5yILKVNUjxN6rCAFjVTeYQ/i7jABhg1d6/LAqiV6sDRIq7x6c8hJionGKIrFWzi0uYrn6Ju6ZSozbz/LlEtaPxmVWjmRvcjQCY58Flajq76b8BAMDt5tBxu5VRmESIZZRtK8V8KQiz5WTEfJzOvD/6UggiICn9cc+YwrrOc2vzvF6HCcRF+1A9W4LGt7E/e6OTpu5dAfDP1+DBqlmMvatX+SElp2qAxKcwzuB4XRLwDyp8bANdeWECAAAAAElFTkSuQmCC"/> <span class="nick">PM: '+data.name+'</span>: <font color="grey"><u>'+strip_tags(data.message)+'</u></font></div><div class="saat small">'+new Date(Date.now()).getHours() < 10 ? '0' + new Date(Date.now()).getHours() : new Date(Date.now()).getHours())+':'+(new Date(Date.now()).getMinutes() < 10 ? '0' + new Date(Date.now()).getMinutes() : new Date(Date.now()).getMinutes()+'</div></div>');
+            }
+        })
+
+        socket.on('stats', function(data){
+            infoOnline.html(data.online);
+            infoMessage.html(data.message);
+            infoNick.html(username);
+            odaGenel.html(data.rooms.genel);
+            odaOyuncuArama.html(data.rooms.oyuncu_arama);
+        })
+
+        textarea.keypress(function(e){
+            if(e.which === 13 && e.shiftKey == false){
+                socket.emit('send', {
+                    name: username,
+                    message: textarea.val(),
+                    time: (new Date(Date.now()).getHours() < 10 ? '0' + new Date(Date.now()).getHours() : new Date(Date.now()).getHours())+':'+(new Date(Date.now()).getMinutes() < 10 ? '0' + new Date(Date.now()).getMinutes() : new Date(Date.now()).getMinutes()),
+                    room: r,
+                    avatar: avatar
+                });
+                textarea.val('');
+                textarea.focus();
+                scrollStart();
+            }
+        });
+        resizeBackground();
+    }, 1000);
+});
+</script>
+</body>
+</html>
