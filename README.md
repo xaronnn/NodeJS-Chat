@@ -1,6 +1,6 @@
 # NodeJS-Chat
 NodeJS Chat Application
 
-Install MongoDB
-npm install
-node server.js
+Install MongoDB</br></br>
+npm install</br>
+node server.js</br>
