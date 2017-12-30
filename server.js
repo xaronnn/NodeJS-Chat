@@ -20,7 +20,6 @@ mongo.connect('mongodb://127.0.0.1/mongochat', function(err, db){
         throw err;
     }
     console.log('MongoDB connected');
-    console.log('Successfully started chat server on '+port);
 
     app.use(morgan('dev'));
     app.use("/assets", static(__dirname + "/assets"));
@@ -46,9 +45,8 @@ mongo.connect('mongodb://127.0.0.1/mongochat', function(err, db){
           });
           console.log(getIP(req));
     });
-
-    console.log('Successfully started chat server page on '+portp);
     client.on('connection',  function(socket){
+        console.log('Successfully started chat server on '+port);
         let chat = db.collection('chats');
 
         // --- FUNCTIONS START --- \\
@@ -177,4 +175,5 @@ mongo.connect('mongodb://127.0.0.1/mongochat', function(err, db){
         sendStats();
     });
     app.listen(portp);
+    console.log('Successfully started chat server page on '+portp);
 });
