@@ -9,7 +9,7 @@
     "express-static": "^1.2.5",
     "http": "0.0.0",
     "ipware": "^1.0.0",
-    "mongodb": "^2.2.33",
+    "mongodb": "^3.6.1",
     "morgan": "^1.9.0",
     "path": "^0.12.7",
     "profanity-filter": "^0.2.1",
